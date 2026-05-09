@@ -23,7 +23,8 @@ def reset_app():
     st.session_state.num_rows = 1
 
 # --- INTERFACCIA ---
-c_header1, c_header2 = st.columns()
+# CORREZIONE: Aggiunto il numero 2 dentro columns
+c_header1, c_header2 = st.columns(2)
 with c_header1:
     if os.path.exists(LOGO_PATH):
         st.image(LOGO_PATH, width=100)
@@ -53,6 +54,7 @@ lista_tabella = []
 pezzi_input = []
 
 for i in range(st.session_state.num_rows):
+    # CORREZIONE: Aggiunto il numero 4 dentro columns
     c1, c2, c3, c4 = st.columns(4)
     nome = c1.text_input(f"Pezzo {i+1}", f"P.{i+1}", key=f"n_{i}")
     w = c2.number_input(f"Lungo (mm)", value=400, key=f"w_{i}", min_value=1)
@@ -89,13 +91,12 @@ if st.button("🚀 GENERA DOCUMENTO COMPLETO", type="primary", use_container_wid
                 ax.set_ylim(0, bin_h)
                 ax.set_aspect('equal')
                 
-                # Nascondo assi ma tengo il bordo del pannello
                 ax.set_xticks([])
                 ax.set_yticks([])
                 for spine in ax.spines.values():
                     spine.set_visible(False)
                 
-                # DISEGNO BORDO SOTTILE PANNELLO (Pannello Grezzo)
+                # Bordo sottile pannello
                 ax.add_patch(patches.Rectangle((0, 0), bin_w, bin_h, color="#fdfdfd", edgecolor="black", linewidth=0.5, alpha=1, zorder=0))
 
                 for rect in bin_rects:
@@ -103,17 +104,13 @@ if st.button("🚀 GENERA DOCUMENTO COMPLETO", type="primary", use_container_wid
                     w_reale = int(w - kerf)
                     h_reale = int(h - kerf)
                     
-                    # Rettangolo Pezzo con bordo marcato
                     ax.add_patch(patches.Rectangle((x, y), w_reale, h_reale, facecolor="#e67e22", edgecolor="black", linewidth=0.8, zorder=1))
                     
-                    # NOME al centro
                     ax.text(x + w_reale/2, y + h_reale/2, rid, ha='center', va='center', fontsize=9, fontweight='bold', color='white', zorder=2)
                     
-                    # MISURA ORIZZONTALE
                     ax.text(x + w_reale/2, y + h_reale - (h_reale*0.05 if h_reale > 40 else 2), 
                             f"{w_reale}", ha='center', va='top', fontsize=7, color='white', alpha=0.9, zorder=2)
                     
-                    # MISURA VERTICALE
                     ax.text(x + (w_reale*0.05 if w_reale > 40 else 2), y + h_reale/2, 
                             f"{h_reale}", va='center', ha='left', rotation=90, fontsize=7, color='white', alpha=0.9, zorder=2)
 
@@ -122,7 +119,6 @@ if st.button("🚀 GENERA DOCUMENTO COMPLETO", type="primary", use_container_wid
                 pdf.savefig(fig, bbox_inches='tight')
                 plt.close(fig)
 
-            # Pagina Lista
             fig_tab, ax_tab = plt.subplots(figsize=(8.27, 11.69))
             ax_tab.axis('off')
             ax_tab.table(cellText=df.values, colLabels=df.columns, loc='center', cellLoc='center')
@@ -137,4 +133,3 @@ if st.button("🚀 GENERA DOCUMENTO COMPLETO", type="primary", use_container_wid
             mime="application/pdf",
             use_container_width=True
         )
-
