@@ -26,37 +26,39 @@ if 'num_rows' not in st.session_state:
 
 st.header(f"📦 Lista Pezzi: {cliente}")
 pezzi_input = []
+
+# Funzione per aggiungere riga
+def add_row():
+    st.session_state.num_rows += 1
+
 for i in range(st.session_state.num_rows):
-    c1, c2, c3, c4 = st.columns()
+    # CORREZIONE: Aggiunto il numero 4 dentro columns
+    c1, c2, c3, c4 = st.columns(4)
     nome = c1.text_input(f"Pezzo {i+1}", f"Pezzo {i+1}", key=f"n_{i}")
-    w = c2.number_input(f"Lungo V. (mm)", value=400, key=f"w_{i}")
-    h = c3.number_input(f"Trasv. V. (mm)", value=300, key=f"h_{i}")
+    w = c2.number_input(f"Lungo V. (mm)", value=400, key=f"w_{i}", min_value=1)
+    h = c3.number_input(f"Trasv. V. (mm)", value=300, key=f"h_{i}", min_value=1)
     qta = c4.number_input(f"Q.tà", value=1, key=f"q_{i}", min_value=1)
     for _ in range(qta):
-        # NOTA: Qui passiamo solo larghezza e altezza come numeri
         pezzi_input.append({"width": w + kerf, "height": h + kerf, "name": nome})
 
-if st.button("➕ Aggiungi riga"):
-    st.session_state.num_rows += 1
-    st.rerun()
+st.button("➕ Aggiungi riga", on_click=add_row)
 
 # --- CALCOLO E PDF ---
 if st.button("🚀 GENERA SCHEMI E PDF"):
     if not pezzi_input:
         st.warning("Inserisci almeno un pezzo!")
     else:
-        # Inizializziamo il packer correttamente
+        # Inizializziamo il packer
         packer = newPacker(rotation=(not rispetta_venatura))
         
         for p in pezzi_input:
-            # add_rect vuole solo (larghezza, altezza) e rid separato
             packer.add_rect(p["width"], p["height"], rid=p["name"])
         
         packer.add_bin(bin_w, bin_h, count=float("inf"))
         packer.pack()
 
         nbins = len(packer)
-        st.metric("Pannelli totali", nbins)
+        st.metric("Pannelli totali necessari", nbins)
         
         pdf_buffer = io.BytesIO()
         data_oggi = datetime.now().strftime("%d/%m/%Y")
@@ -68,17 +70,21 @@ if st.button("🚀 GENERA SCHEMI E PDF"):
             ax.set_ylim(0, bin_h)
             ax.set_aspect('equal')
             
+            # Sfondo
             ax.add_patch(patches.Rectangle((0, 0), bin_w, bin_h, color="#f3e5ab", alpha=0.1))
+            
+            # Disegno venatura se attiva
             if rispetta_venatura:
-                for line in range(0, bin_h, 100):
+                for line in range(0, int(bin_h), 100):
                     ax.axhline(y=line, color='#dcdde1', linewidth=0.5, alpha=0.2)
 
             for rect in bin_rects:
-                # Recuperiamo i dati corretti dal rettangolo posizionato
                 x, y, w, h, rid = rect.x, rect.y, rect.width, rect.height, rect.rid
                 
+                # Rettangolo pezzo
                 ax.add_patch(patches.Rectangle((x, y), w-kerf, h-kerf, 
                                              facecolor="#e67e22", edgecolor="black", linewidth=1))
+                # Testo dimensioni e nome
                 ax.text(x + w/2, y + h/2, f"{rid}\n{int(w-kerf)}x{int(h-kerf)}", 
                         ha='center', va='center', fontsize=8, color='white', fontweight='bold')
 
@@ -87,6 +93,7 @@ if st.button("🚀 GENERA SCHEMI E PDF"):
             
             st.pyplot(fig)
             fig.savefig(pdf_buffer, format='pdf', bbox_inches='tight')
+            plt.close(fig) # Chiude la figura per liberare memoria
             st.divider()
 
         st.download_button(
@@ -95,4 +102,3 @@ if st.button("🚀 GENERA SCHEMI E PDF"):
             file_name=f"Taglio_{cliente.replace(' ', '_')}.pdf",
             mime="application/pdf"
         )
-
