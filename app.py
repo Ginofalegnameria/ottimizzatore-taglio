@@ -38,7 +38,7 @@ with st.expander("📝 IMPOSTAZIONI COMMESSA E PANNELLO", expanded=True):
     c_pan1, c_pan2, c_pan3 = st.columns(3)
     bin_w = c_pan1.number_input("Lunghezza Pannello (mm)", value=2440)
     bin_h = c_pan2.number_input("Altezza Pannello (mm)", value=1220)
-    kerf = c_pan3.number_input("Spessore Lama (mm)", value=3)
+    kerf = c_pan3.number_input("Spessore Lama (mm)", value=8)
     
     rispetta_venatura = st.toggle("Rispetta Venatura (No Rotazione)", value=True)
     if st.button("🗑️ Reset Totale"):
