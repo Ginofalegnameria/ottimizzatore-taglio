@@ -26,7 +26,7 @@ def reset_app():
 c_header1, c_header2 = st.columns([1, 4])
 with c_header1:
     if os.path.exists(LOGO_PATH):
-        st.image(LOGO_PATH, width=120)
+        st.image(LOGO_PATH, width=100)
 with c_header2:
     st.title("🪚 Ottimizzatore Professionale")
 
@@ -85,14 +85,12 @@ if st.button("🚀 GENERA DOCUMENTO COMPLETO", type="primary", use_container_wid
 
             for i, bin_rects in enumerate(packer):
                 fig, ax = plt.subplots(figsize=(12, 8))
-                ax.set_xlim(-100, bin_w + 100)
-                ax.set_ylim(-100, bin_h + 100)
+                ax.set_xlim(0, bin_w)
+                ax.set_ylim(0, bin_h)
                 ax.set_aspect('equal')
-                ax.axis('off')
                 
-                # Disegno Pannello Grezzo
-                ax.add_patch(patches.Rectangle((0, 0), bin_w, bin_h, color="#dfe6e9", alpha=0.3, linewidth=2, edgecolor="black"))
-                ax.text(bin_w/2, bin_h + 20, f"PANNELLO: {bin_w} x {bin_h} mm", ha='center', fontweight='bold', fontsize=12)
+                # Sfondo Pannello
+                ax.add_patch(patches.Rectangle((0, 0), bin_w, bin_h, color="#ecf0f1", alpha=0.5, edgecolor="black", linewidth=1))
 
                 for rect in bin_rects:
                     x, y, w, h, rid = rect.x, rect.y, rect.width, rect.height, rect.rid
@@ -100,18 +98,20 @@ if st.button("🚀 GENERA DOCUMENTO COMPLETO", type="primary", use_container_wid
                     h_reale = int(h - kerf)
                     
                     # Rettangolo Pezzo
-                    ax.add_patch(patches.Rectangle((x, y), w_reale, h_reale, facecolor="#e67e22", edgecolor="black", linewidth=1.5))
+                    ax.add_patch(patches.Rectangle((x, y), w_reale, h_reale, facecolor="#e67e22", edgecolor="black", linewidth=1.2))
                     
-                    # Nome al centro
+                    # NOME al centro
                     ax.text(x + w_reale/2, y + h_reale/2, rid, ha='center', va='center', fontsize=9, fontweight='bold', color='white')
                     
-                    # Misura sul lato ORIZZONTALE (sopra)
-                    ax.text(x + w_reale/2, y + h_reale + 5, f"{w_reale}", ha='center', fontsize=8, fontweight='bold')
+                    # MISURA ORIZZONTALE (in alto dentro il pezzo)
+                    ax.text(x + w_reale/2, y + h_reale - (h_reale*0.1 if h_reale > 50 else 5), 
+                            f"{w_reale}", ha='center', va='top', fontsize=7, color='white', alpha=0.9)
                     
-                    # Misura sul lato VERTICALE (sinistra)
-                    ax.text(x - 5, y + h_reale/2, f"{h_reale}", va='center', ha='right', rotation=90, fontsize=8, fontweight='bold')
+                    # MISURA VERTICALE (a sinistra dentro il pezzo)
+                    ax.text(x + (w_reale*0.1 if w_reale > 50 else 5), y + h_reale/2, 
+                            f"{h_reale}", va='center', ha='left', rotation=90, fontsize=7, color='white', alpha=0.9)
 
-                plt.title(f"SCHEMA DI TAGLIO - CLIENTE: {cliente}\nMateriale: {materiale} - Foglio {i+1}/{len(packer)}", pad=40, fontsize=14)
+                plt.title(f"SCHEMA DI TAGLIO - CLIENTE: {cliente}\n{materiale} - Foglio {i+1}/{len(packer)} ({bin_w}x{bin_h}mm)", pad=20, fontsize=12)
                 st.pyplot(fig)
                 pdf.savefig(fig, bbox_inches='tight')
                 plt.close(fig)
