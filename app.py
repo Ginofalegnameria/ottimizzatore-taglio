@@ -19,8 +19,7 @@ def reset_app():
     st.session_state.num_rows = 1
 
 # --- INTERFACCIA PRINCIPALE ---
-st.title("Ottimizzatore Professionale realizzato da 
-Pialletto d_oro")
+st.title("Ottimizzatore tagli realizzato da Pialletto d_oro")
 
 # 1. DATI COMMESSA E PANNELLO (Spostati dalla Sidebar al Centro)
 with st.expander("📝 IMPOSTAZIONI COMMESSA E PANNELLO", expanded=True):
