@@ -18,31 +18,38 @@ def reset_app():
         del st.session_state[key]
     st.session_state.num_rows = 1
 
-# --- INTERFACCIA ---
-st.title("🪚 Ottimizzatore Professionale: Schemi + Lista")
+# --- INTERFACCIA PRINCIPALE ---
+st.title("🪚 Ottimizzatore Professionale")
 
-st.sidebar.header("📋 Dati Commessa")
-cliente = st.sidebar.text_input("Nome Cliente", "Cliente Generico")
-materiale = st.sidebar.text_input("Materiale", "Multistrato 18mm")
+# 1. DATI COMMESSA E PANNELLO (Spostati dalla Sidebar al Centro)
+with st.expander("📝 IMPOSTAZIONI COMMESSA E PANNELLO", expanded=True):
+    c_comm1, c_comm2 = st.columns(2)
+    cliente = c_comm1.text_input("Nome Cliente", "Cliente Generico")
+    materiale = c_comm2.text_input("Materiale", "Multistrato 18mm")
+    
+    c_pan1, c_pan2, c_pan3 = st.columns(3)
+    bin_w = c_pan1.number_input("Lunghezza Pannello (mm)", value=2440)
+    bin_h = c_pan2.number_input("Altezza Pannello (mm)", value=1220)
+    kerf = c_pan3.number_input("Lama (mm)", value=3)
+    
+    rispetta_venatura = st.toggle("Rispetta Venatura (No Rotazione)", value=True)
+    if st.button("🗑️ Reset Totale"):
+        reset_app()
+        st.rerun()
 
-st.sidebar.header("📏 Pannello")
-bin_w = st.sidebar.number_input("Lunghezza (mm)", value=2440)
-bin_h = st.sidebar.number_input("Altezza (mm)", value=1220)
-kerf = st.sidebar.number_input("Lama (mm)", value=3)
-rispetta_venatura = st.sidebar.toggle("Rispetta Venatura", value=True)
+st.divider()
 
-st.sidebar.divider()
-st.sidebar.button("🗑️ Reset Totale", on_click=reset_app)
-
-st.header(f"📦 Ordine: {cliente}")
+# 2. LISTA PEZZI
+st.header(f"📦 Pezzi da Tagliare")
 lista_tabella = []
 pezzi_input = []
 
 for i in range(st.session_state.num_rows):
-    c1, c2, c3, c4 = st.columns(4)
+    # Su mobile queste colonne si impileranno verticalmente in modo ordinato
+    c1, c2, c3, c4 = st.columns([2, 1, 1, 1])
     nome = c1.text_input(f"Pezzo {i+1}", f"Pezzo {i+1}", key=f"n_{i}")
-    w = c2.number_input(f"Lungo V. (mm)", value=400, key=f"w_{i}", min_value=1)
-    h = c3.number_input(f"Trasv. V. (mm)", value=300, key=f"h_{i}", min_value=1)
+    w = c2.number_input(f"Lungo (mm)", value=400, key=f"w_{i}", min_value=1)
+    h = c3.number_input(f"Trasv (mm)", value=300, key=f"h_{i}", min_value=1)
     qta = c4.number_input(f"Q.tà", value=1, key=f"q_{i}", min_value=1)
     
     lista_tabella.append({"Pezzo": nome, "Lungo (mm)": w, "Trasv (mm)": h, "Q.tà": qta})
@@ -51,8 +58,8 @@ for i in range(st.session_state.num_rows):
 
 st.button("➕ Aggiungi riga", on_click=lambda: st.session_state.update(num_rows=st.session_state.num_rows + 1))
 
-# --- CALCOLO E PDF ---
-if st.button("🚀 GENERA DOCUMENTO COMPLETO", type="primary"):
+# 3. CALCOLO E PDF
+if st.button("🚀 GENERA DOCUMENTO COMPLETO", type="primary", use_container_width=True):
     if not pezzi_input:
         st.warning("Inserisci i pezzi!")
     else:
@@ -62,18 +69,18 @@ if st.button("🚀 GENERA DOCUMENTO COMPLETO", type="primary"):
         packer.add_bin(bin_w, bin_h, count=float("inf"))
         packer.pack()
 
-        st.metric("Pannelli totali", len(packer))
+        st.metric("Pannelli totali necessari", len(packer))
+        
+        # Mostra tabella riassuntiva
         df = pd.DataFrame(lista_tabella)
-        st.table(df)
+        st.dataframe(df, use_container_width=True)
 
-        # Creazione PDF multipagina
         pdf_buffer = io.BytesIO()
         with PdfPages(pdf_buffer) as pdf:
             data_oggi = datetime.now().strftime("%d/%m/%Y")
 
-            # PAGINE DEGLI SCHEMI
             for i, bin_rects in enumerate(packer):
-                fig, ax = plt.subplots(figsize=(11.69, 8.27)) # Formato A4 Orizzontale
+                fig, ax = plt.subplots(figsize=(11.69, 8.27))
                 ax.set_xlim(0, bin_w)
                 ax.set_ylim(0, bin_h)
                 ax.set_aspect('equal')
@@ -91,20 +98,21 @@ if st.button("🚀 GENERA DOCUMENTO COMPLETO", type="primary"):
 
                 plt.title(f"CLIENTE: {cliente} | MAT: {materiale}\nPANNELLO {i+1}/{len(packer)} - {data_oggi}")
                 st.pyplot(fig)
-                pdf.savefig(fig) # Salva la pagina dello schema
+                pdf.savefig(fig)
                 plt.close(fig)
 
-            # PAGINA DELLA LISTA (Tabella)
-            fig_tab, ax_tab = plt.subplots(figsize=(8.27, 11.69)) # Formato A4 Verticale
+            fig_tab, ax_tab = plt.subplots(figsize=(8.27, 11.69))
             ax_tab.axis('off')
             ax_tab.table(cellText=df.values, colLabels=df.columns, loc='center', cellLoc='center')
-            plt.title(f"LISTA TAGLI RIEPILOGATIVA - {cliente}\nMateriale: {materiale}", pad=30)
-            pdf.savefig(fig_tab) # Salva la pagina della lista
+            plt.title(f"LISTA TAGLI - {cliente}\nMateriale: {materiale}", pad=30)
+            pdf.savefig(fig_tab)
             plt.close(fig_tab)
 
         st.download_button(
             label="📄 SCARICA PDF (Schemi + Lista)",
             data=pdf_buffer.getvalue(),
             file_name=f"Taglio_{cliente}.pdf",
-            mime="application/pdf"
+            mime="application/pdf",
+            use_container_width=True
         )
+
