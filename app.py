@@ -84,40 +84,38 @@ if st.button("🚀 GENERA DOCUMENTO COMPLETO", type="primary", use_container_wid
             data_oggi = datetime.now().strftime("%d/%m/%Y")
 
             for i, bin_rects in enumerate(packer):
+                # Aumentiamo il margine dell'area di disegno per non tagliare il bordo
                 fig, ax = plt.subplots(figsize=(12, 8))
-                # Margine intorno al pannello per far vedere il bordo
-                ax.set_xlim(-50, bin_w + 50)
-                ax.set_ylim(-50, bin_h + 50)
+                margine = 100
+                ax.set_xlim(-margine, bin_w + margine)
+                ax.set_ylim(-margine, bin_h + margine)
                 ax.set_aspect('equal')
+                ax.axis('off')
                 
-                ax.set_xticks([])
-                ax.set_yticks([])
-                for spine in ax.spines.values():
-                    spine.set_visible(False)
-                
-                # DISEGNO PANNELLO CON BORDO MARCATO
-                ax.add_patch(patches.Rectangle((0, 0), bin_w, bin_h, color="#f9f9f9", edgecolor="black", linewidth=2.0, zorder=0))
+                # DISEGNO PANNELLO CON BORDO NERO SPESSO (Disegnato leggermente fuori per visibilità)
+                ax.add_patch(patches.Rectangle((-2, -2), bin_w + 4, bin_h + 4, color="black", zorder=0))
+                ax.add_patch(patches.Rectangle((0, 0), bin_w, bin_h, color="#fdfdfd", zorder=1))
 
                 for rect in bin_rects:
                     x, y, w, h, rid = rect.x, rect.y, rect.width, rect.height, rect.rid
                     w_reale = int(w - kerf)
                     h_reale = int(h - kerf)
                     
-                    ax.add_patch(patches.Rectangle((x, y), w_reale, h_reale, facecolor="#e67e22", edgecolor="black", linewidth=1.0, zorder=1))
+                    # Pezzo
+                    ax.add_patch(patches.Rectangle((x, y), w_reale, h_reale, facecolor="#e67e22", edgecolor="black", linewidth=1.5, zorder=2))
                     
-                    ax.text(x + w_reale/2, y + h_reale/2, rid, ha='center', va='center', fontsize=9, fontweight='bold', color='white', zorder=2)
-                    
-                    ax.text(x + w_reale/2, y + h_reale - (h_reale*0.05 if h_reale > 40 else 2), 
-                            f"{w_reale}", ha='center', va='top', fontsize=7, color='white', zorder=2)
-                    
-                    ax.text(x + (w_reale*0.05 if w_reale > 40 else 2), y + h_reale/2, 
-                            f"{h_reale}", va='center', ha='left', rotation=90, fontsize=7, color='white', zorder=2)
+                    # Testi
+                    ax.text(x + w_reale/2, y + h_reale/2, rid, ha='center', va='center', fontsize=9, fontweight='bold', color='white', zorder=3)
+                    ax.text(x + w_reale/2, y + h_reale - (h_reale*0.05 if h_reale > 40 else 2), f"{w_reale}", ha='center', va='top', fontsize=7, color='white', zorder=3)
+                    ax.text(x + (w_reale*0.05 if w_reale > 40 else 2), y + h_reale/2, f"{h_reale}", va='center', ha='left', rotation=90, fontsize=7, color='white', zorder=3)
 
                 plt.title(f"SCHEMA DI TAGLIO - CLIENTE: {cliente}\n{materiale} - Foglio {i+1}/{len(packer)} ({bin_w}x{bin_h}mm)", pad=20, fontsize=12)
                 st.pyplot(fig)
-                pdf.savefig(fig, bbox_inches='tight')
+                # Salvataggio senza 'tight' per preservare i bordi
+                pdf.savefig(fig)
                 plt.close(fig)
 
+            # Pagina Lista
             fig_tab, ax_tab = plt.subplots(figsize=(8.27, 11.69))
             ax_tab.axis('off')
             ax_tab.table(cellText=df.values, colLabels=df.columns, loc='center', cellLoc='center')
@@ -126,7 +124,7 @@ if st.button("🚀 GENERA DOCUMENTO COMPLETO", type="primary", use_container_wid
             plt.close(fig_tab)
 
         st.download_button(
-            label="📄 SCARICA PDF PER OFFICINA",
+            label="📄 SCARICA PDF CON BORDO NERO",
             data=pdf_buffer.getvalue(),
             file_name=f"Taglio_{cliente}.pdf",
             mime="application/pdf",
