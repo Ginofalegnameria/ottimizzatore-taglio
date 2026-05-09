@@ -6,8 +6,12 @@ from matplotlib.backends.backend_pdf import PdfPages
 import io
 import pandas as pd
 from datetime import datetime
+import os
 
 st.set_page_config(page_title="Taglio Pro - Falegnameria", layout="wide")
+
+# --- GESTIONE LOGO ---
+LOGO_PATH = "logo.png" # Il file deve essere caricato su GitHub con questo nome
 
 # --- STATO DELL'APP ---
 if 'num_rows' not in st.session_state:
@@ -19,9 +23,14 @@ def reset_app():
     st.session_state.num_rows = 1
 
 # --- INTERFACCIA PRINCIPALE ---
-st.title("🪚 Ottimizzatore professionale by Pialletto d'oro 📐")
+c_header1, c_header2 = st.columns([1, 4])
+with c_header1:
+    if os.path.exists(LOGO_PATH):
+        st.image(LOGO_PATH, width=150)
+with c_header2:
+    st.title("🪚 Ottimizzatore Professionale")
 
-# 1. DATI COMMESSA E PANNELLO (Spostati dalla Sidebar al Centro)
+# 1. DATI COMMESSA E PANNELLO
 with st.expander("📝 IMPOSTAZIONI COMMESSA E PANNELLO", expanded=True):
     c_comm1, c_comm2 = st.columns(2)
     cliente = c_comm1.text_input("Nome Cliente", "Cliente Generico")
@@ -45,8 +54,7 @@ lista_tabella = []
 pezzi_input = []
 
 for i in range(st.session_state.num_rows):
-    # Su mobile queste colonne si impileranno verticalmente in modo ordinato
-    c1, c2, c3, c4 = st.columns([2, 1, 1, 1])
+    c1, c2, c3, c4 = st.columns(4)
     nome = c1.text_input(f"Pezzo {i+1}", f"Pezzo {i+1}", key=f"n_{i}")
     w = c2.number_input(f"Lungo (mm)", value=400, key=f"w_{i}", min_value=1)
     h = c3.number_input(f"Trasv (mm)", value=300, key=f"h_{i}", min_value=1)
@@ -70,10 +78,7 @@ if st.button("🚀 GENERA DOCUMENTO COMPLETO", type="primary", use_container_wid
         packer.pack()
 
         st.metric("Pannelli totali necessari", len(packer))
-        
-        # Mostra tabella riassuntiva
         df = pd.DataFrame(lista_tabella)
-        st.dataframe(df, use_container_width=True)
 
         pdf_buffer = io.BytesIO()
         with PdfPages(pdf_buffer) as pdf:
@@ -84,23 +89,26 @@ if st.button("🚀 GENERA DOCUMENTO COMPLETO", type="primary", use_container_wid
                 ax.set_xlim(0, bin_w)
                 ax.set_ylim(0, bin_h)
                 ax.set_aspect('equal')
-                ax.add_patch(patches.Rectangle((0, 0), bin_w, bin_h, color="#f3e5ab", alpha=0.1))
                 
-                if rispetta_venatura:
-                    for line in range(0, int(bin_h), 100):
-                        ax.axhline(y=line, color='#dcdde1', linewidth=0.5, alpha=0.2)
-
+                # Sfondo e pezzi
+                ax.add_patch(patches.Rectangle((0, 0), bin_w, bin_h, color="#f3e5ab", alpha=0.1))
                 for rect in bin_rects:
                     x, y, w, h, rid = rect.x, rect.y, rect.width, rect.height, rect.rid
                     ax.add_patch(patches.Rectangle((x, y), w-kerf, h-kerf, facecolor="#e67e22", edgecolor="black"))
                     ax.text(x + w/2, y + h/2, f"{rid}\n{int(w-kerf)}x{int(h-kerf)}", 
                             ha='center', va='center', fontsize=7, color='white', fontweight='bold')
 
-                plt.title(f"CLIENTE: {cliente} | MAT: {materiale}\nPANNELLO {i+1}/{len(packer)} - {data_oggi}")
+                # Aggiunta logo nel PDF se presente
+                if os.path.exists(LOGO_PATH):
+                    img = plt.imread(LOGO_PATH)
+                    fig.figimage(img, 50, 50, alpha=0.2, zorder=1) # Logo in filigrana o piccolo in un angolo
+
+                plt.title(f"FALEGNAMERIA - CLIENTE: {cliente}\nPANNELLO {i+1}/{len(packer)} ({materiale}) - {data_oggi}")
                 st.pyplot(fig)
                 pdf.savefig(fig)
                 plt.close(fig)
 
+            # Pagina Tabella
             fig_tab, ax_tab = plt.subplots(figsize=(8.27, 11.69))
             ax_tab.axis('off')
             ax_tab.table(cellText=df.values, colLabels=df.columns, loc='center', cellLoc='center')
@@ -109,10 +117,11 @@ if st.button("🚀 GENERA DOCUMENTO COMPLETO", type="primary", use_container_wid
             plt.close(fig_tab)
 
         st.download_button(
-            label="📄 SCARICA PDF (Schemi + Lista)",
+            label="📄 SCARICA PDF CON LOGO",
             data=pdf_buffer.getvalue(),
             file_name=f"Taglio_{cliente}.pdf",
             mime="application/pdf",
             use_container_width=True
         )
+
 
