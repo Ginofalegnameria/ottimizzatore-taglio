@@ -23,7 +23,7 @@ def reset_app():
     st.session_state.num_rows = 1
 
 # --- INTERFACCIA ---
-c_header1, c_header2 = st.columns([1, 4])
+c_header1, c_header2 = st.columns()
 with c_header1:
     if os.path.exists(LOGO_PATH):
         st.image(LOGO_PATH, width=100)
@@ -89,33 +89,33 @@ if st.button("🚀 GENERA DOCUMENTO COMPLETO", type="primary", use_container_wid
                 ax.set_ylim(0, bin_h)
                 ax.set_aspect('equal')
                 
-                # RIMOZIONE NUMERAZIONE ESTERNA (Assi)
+                # Nascondo assi ma tengo il bordo del pannello
                 ax.set_xticks([])
                 ax.set_yticks([])
                 for spine in ax.spines.values():
                     spine.set_visible(False)
                 
-                # Sfondo Pannello
-                ax.add_patch(patches.Rectangle((0, 0), bin_w, bin_h, color="#ecf0f1", alpha=0.5, edgecolor="black", linewidth=2))
+                # DISEGNO BORDO SOTTILE PANNELLO (Pannello Grezzo)
+                ax.add_patch(patches.Rectangle((0, 0), bin_w, bin_h, color="#fdfdfd", edgecolor="black", linewidth=0.5, alpha=1, zorder=0))
 
                 for rect in bin_rects:
                     x, y, w, h, rid = rect.x, rect.y, rect.width, rect.height, rect.rid
                     w_reale = int(w - kerf)
                     h_reale = int(h - kerf)
                     
-                    # Rettangolo Pezzo
-                    ax.add_patch(patches.Rectangle((x, y), w_reale, h_reale, facecolor="#e67e22", edgecolor="black", linewidth=1.2))
+                    # Rettangolo Pezzo con bordo marcato
+                    ax.add_patch(patches.Rectangle((x, y), w_reale, h_reale, facecolor="#e67e22", edgecolor="black", linewidth=0.8, zorder=1))
                     
                     # NOME al centro
-                    ax.text(x + w_reale/2, y + h_reale/2, rid, ha='center', va='center', fontsize=9, fontweight='bold', color='white')
+                    ax.text(x + w_reale/2, y + h_reale/2, rid, ha='center', va='center', fontsize=9, fontweight='bold', color='white', zorder=2)
                     
-                    # MISURA ORIZZONTALE (in alto dentro)
+                    # MISURA ORIZZONTALE
                     ax.text(x + w_reale/2, y + h_reale - (h_reale*0.05 if h_reale > 40 else 2), 
-                            f"{w_reale}", ha='center', va='top', fontsize=7, color='white', alpha=0.9)
+                            f"{w_reale}", ha='center', va='top', fontsize=7, color='white', alpha=0.9, zorder=2)
                     
-                    # MISURA VERTICALE (a sinistra dentro)
+                    # MISURA VERTICALE
                     ax.text(x + (w_reale*0.05 if w_reale > 40 else 2), y + h_reale/2, 
-                            f"{h_reale}", va='center', ha='left', rotation=90, fontsize=7, color='white', alpha=0.9)
+                            f"{h_reale}", va='center', ha='left', rotation=90, fontsize=7, color='white', alpha=0.9, zorder=2)
 
                 plt.title(f"SCHEMA DI TAGLIO - CLIENTE: {cliente}\n{materiale} - Foglio {i+1}/{len(packer)} ({bin_w}x{bin_h}mm)", pad=20, fontsize=12)
                 st.pyplot(fig)
